@@ -1,0 +1,6 @@
+{
+    "port": "4000",
+    "host": "localhost",
+    "connection_type": "tcp",
+    "max_client_connections": 5
+}
