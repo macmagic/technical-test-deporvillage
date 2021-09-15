@@ -1,4 +1,4 @@
-package application
+package config
 
 import (
 	"encoding/json"
@@ -31,8 +31,4 @@ func NewConfig(configPath string) (*Config, error) {
 	}
 
 	return config, nil
-}
-
-func loadFromFile() {
-
 }

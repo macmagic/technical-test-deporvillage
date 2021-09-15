@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/macmagic/technical-test-deporvillage/internal/bootstrap"
+	"github.com/macmagic/technical-test-deporvillage/internal/application/bootstrap"
 	"log"
 	"net"
 )

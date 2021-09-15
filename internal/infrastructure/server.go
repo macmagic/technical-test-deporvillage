@@ -3,10 +3,14 @@ package infrastructure
 import (
 	"bufio"
 	"fmt"
-	"github.com/macmagic/technical-test-deporvillage/internal/application"
+	"github.com/macmagic/technical-test-deporvillage/internal/application/config"
 	"github.com/macmagic/technical-test-deporvillage/internal/io"
 	"log"
 	"net"
+)
+
+const (
+	terminateOrder = "terminate"
 )
 
 var numberOfConnectedClients = 0
@@ -18,7 +22,7 @@ type Server struct {
 	connectionType       string
 }
 
-func NewServer(appConfig *application.Config) *Server {
+func NewServer(appConfig *config.Config) *Server {
 	return &Server{
 		reportService:        io.NewServiceReport(),
 		serverAddress:        getServerAddress(appConfig),
@@ -29,7 +33,6 @@ func NewServer(appConfig *application.Config) *Server {
 
 func (s *Server) StartListen() {
 	log.Println("Starting " + s.connectionType + " server on " + s.serverAddress)
-
 	listener, err := net.Listen(s.connectionType, s.serverAddress)
 
 	if err != nil {
@@ -37,58 +40,57 @@ func (s *Server) StartListen() {
 	}
 
 	defer listener.Close()
-	ch := make(chan bool)
 
-	for {
-		c, err := listener.Accept()
+	stopChannel := make(chan string)
 
-		if err != nil {
-			log.Println("Error connecting:", err.Error())
-			return
+	go func() {
+		defer close(stopChannel)
+		for {
+			conn, err := listener.Accept()
+
+			if err != nil {
+				log.Println("Error connecting:", err.Error())
+				return
+			}
+
+			numberOfConnectedClients += 1
+			log.Println("Client connected")
+			log.Println("Client " + conn.RemoteAddr().String() + " connected.")
+
+			if numberOfConnectedClients > s.maxClientConnections {
+				log.Println("Limit reached! Disconnecting:", conn.RemoteAddr().String())
+				conn.Close()
+			}
+
+			go handleConnection(conn, stopChannel)
 		}
 
-		numberOfConnectedClients += 1
-		log.Println("Client connected")
-		log.Println("Client " + c.RemoteAddr().String() + " connected.")
+	}()
+	<-stopChannel
 
-		if numberOfConnectedClients > s.maxClientConnections {
-			log.Println("Limit reached! Disconnecting:", c.RemoteAddr().String())
-			c.Close()
-		}
-
-		go handleConnection(c, ch)
-
-		result := <-ch
-		if result {
-			return
-		}
-
-	}
+	log.Println("Finish server...")
 }
 
-func handleConnection(conn net.Conn, ch chan bool) {
+func handleConnection(conn net.Conn, c1 chan string) {
 	buffer, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
-		fmt.Println("Client left")
+		log.Println("Client left")
 		conn.Close()
 		numberOfConnectedClients -= 1
 		return
 	}
 
 	input := string(buffer[:len(buffer)-1])
-
-	if input == "terminate" {
-		ch <- true
+	log.Println(input)
+	if input == terminateOrder {
+		c1 <- input
 		return
 	}
 
-	log.Println(input)
-
-	///serviceReport.AddItem(input)
-	handleConnection(conn, ch)
+	handleConnection(conn, c1)
 }
 
-func getServerAddress(config *application.Config) string {
+func getServerAddress(config *config.Config) string {
 	return fmt.Sprintf("%s:%s", config.Host, config.Port)
 }
