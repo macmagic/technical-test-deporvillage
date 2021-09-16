@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/macmagic/technical-test-deporvillage/internal/application/config"
-	"github.com/macmagic/technical-test-deporvillage/internal/io"
+	"github.com/macmagic/technical-test-deporvillage/internal/domain"
 	"log"
 	"net"
 )
@@ -15,16 +15,33 @@ const (
 
 var numberOfConnectedClients = 0
 
+type ServerInterface interface {
+	StartListen()
+	StopServer()
+}
+
 type Server struct {
-	reportService        *io.ServiceReport
+	skuService           domain.SkuServiceInterface
+	listener			 net.Listener
 	maxClientConnections int
 	serverAddress        string
 	connectionType       string
+	clientConnections    []net.Conn
 }
 
-func NewServer(appConfig *config.Config) *Server {
+func NewServer(appConfig *config.Config, skuServiceInterface domain.SkuServiceInterface) *Server {
+	serverAddress := getServerAddress(appConfig)
+	connectionTcp := appConfig.ConnectionType
+	log.Println("Starting " + connectionTcp + " server on " + serverAddress)
+	listener, err := net.Listen(connectionTcp, serverAddress)
+
+	if err != nil {
+		log.Fatalln("Error listening:", err.Error())
+	}
+
 	return &Server{
-		reportService:        io.NewServiceReport(),
+		listener: listener,
+		skuService:      skuServiceInterface,
 		serverAddress:        getServerAddress(appConfig),
 		maxClientConnections: appConfig.MaxClientConnections,
 		connectionType:       appConfig.ConnectionType,
@@ -32,52 +49,49 @@ func NewServer(appConfig *config.Config) *Server {
 }
 
 func (s *Server) StartListen() {
-	log.Println("Starting " + s.connectionType + " server on " + s.serverAddress)
-	listener, err := net.Listen(s.connectionType, s.serverAddress)
-
-	if err != nil {
-		log.Fatalln("Error listening:", err.Error())
-	}
-
-	defer listener.Close()
-
 	stopChannel := make(chan string)
 
 	go func() {
 		defer close(stopChannel)
 		for {
-			conn, err := listener.Accept()
+			conn, err := s.listener.Accept()
 
 			if err != nil {
 				log.Println("Error connecting:", err.Error())
 				return
 			}
 
-			numberOfConnectedClients += 1
 			log.Println("Client connected")
 			log.Println("Client " + conn.RemoteAddr().String() + " connected.")
 
-			if numberOfConnectedClients > s.maxClientConnections {
+			if len(s.clientConnections) >= s.maxClientConnections {
 				log.Println("Limit reached! Disconnecting:", conn.RemoteAddr().String())
 				conn.Close()
 			}
 
-			go handleConnection(conn, stopChannel)
+			s.clientConnections = append(s.clientConnections, conn)
+
+			go s.handleConnection(conn, stopChannel)
 		}
 
 	}()
 	<-stopChannel
-
-	log.Println("Finish server...")
+	s.StopServer()
 }
 
-func handleConnection(conn net.Conn, c1 chan string) {
+func (s *Server) StopServer() {
+	log.Println("Stopping server...")
+	s.disconnectAllClients()
+	s.listener.Close()
+}
+
+func (s *Server) handleConnection(conn net.Conn, c1 chan string) {
 	buffer, err := bufio.NewReader(conn).ReadBytes('\n')
 
 	if err != nil {
 		log.Println("Client left")
+		s.removeClientFromPool(conn)
 		conn.Close()
-		numberOfConnectedClients -= 1
 		return
 	}
 
@@ -88,9 +102,23 @@ func handleConnection(conn net.Conn, c1 chan string) {
 		return
 	}
 
-	handleConnection(conn, c1)
+	s.handleConnection(conn, c1)
 }
 
 func getServerAddress(config *config.Config) string {
 	return fmt.Sprintf("%s:%s", config.Host, config.Port)
+}
+
+func (s *Server) removeClientFromPool(conn net.Conn) {
+	for i, itemConn := range s.clientConnections {
+		if itemConn.RemoteAddr().String() == conn.RemoteAddr().String() {
+			s.clientConnections = append(s.clientConnections[:i], s.clientConnections[i+1:]...)
+		}
+	}
+}
+
+func (s *Server) disconnectAllClients() {
+	for _, itemConn := range s.clientConnections {
+		itemConn.Close()
+	}
 }

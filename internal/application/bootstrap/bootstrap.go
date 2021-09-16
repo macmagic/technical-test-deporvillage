@@ -2,13 +2,14 @@ package bootstrap
 
 import (
 	"github.com/macmagic/technical-test-deporvillage/internal/application/config"
+	"github.com/macmagic/technical-test-deporvillage/internal/domain"
 	"github.com/macmagic/technical-test-deporvillage/internal/infrastructure"
 	"log"
 	"os"
 	"time"
 )
 
-const maxLifeTime = 30
+const maxLifeTime = 900
 
 func Run() {
 
@@ -18,7 +19,10 @@ func Run() {
 		log.Fatalln("Cannot load application appConfig")
 	}
 
-	server := infrastructure.NewServer(appConfig)
+	repository := infrastructure.NewFileRepository()
+	skuService := domain.NewSkuService(repository)
+
+	server := infrastructure.NewServer(appConfig, skuService)
 
 	stopApp := make(chan bool)
 	go runnerControl(stopApp)
@@ -30,6 +34,7 @@ func Run() {
 
 	select {
 	case <-stopApp:
+		server.StopServer()
 		log.Println("Stopping application...")
 		os.Exit(0)
 	}
