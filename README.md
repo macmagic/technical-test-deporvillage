@@ -8,7 +8,7 @@ The project structure is defined using the hexagonal architecture
 * The infrastructure contains all the necessary code to execute the server and save the info in a file.
 * The "cmd" folder contains the main.go to execute the application.
 
-##App configuration
+## App configuration
 Change the file app.json to change the application configuration
 
 - **Port**: server port
@@ -17,5 +17,5 @@ Change the file app.json to change the application configuration
 - **ConnectionType**: The connection type of the server (tcp, upd, etc).
 - **SkuLogPath**: The path of the sku logs
 
-##Makefile
+## Makefile
 Use the `make` command to install and execute the application, you can find more info using the command `make help`
