@@ -1,2 +1,5 @@
 #Remove IDEA folder
 /.idea
+
+#Remove log report
+sku_report.log

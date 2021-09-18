@@ -10,6 +10,7 @@ type Config struct {
 	Port                 string `json:"port"`
 	ConnectionType       string `json:"connection_type"`
 	MaxClientConnections int    `json:"max_client_connections"`
+	SkuLogPath           string `json:"sku_log_path"`
 }
 
 func NewConfig(configPath string) (*Config, error) {

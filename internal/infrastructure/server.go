@@ -13,8 +13,6 @@ const (
 	terminateOrder = "terminate"
 )
 
-var numberOfConnectedClients = 0
-
 type ServerInterface interface {
 	StartListen()
 	StopServer()
@@ -22,7 +20,7 @@ type ServerInterface interface {
 
 type Server struct {
 	skuService           domain.SkuServiceInterface
-	listener			 net.Listener
+	listener             net.Listener
 	maxClientConnections int
 	serverAddress        string
 	connectionType       string
@@ -40,8 +38,8 @@ func NewServer(appConfig *config.Config, skuServiceInterface domain.SkuServiceIn
 	}
 
 	return &Server{
-		listener: listener,
-		skuService:      skuServiceInterface,
+		listener:             listener,
+		skuService:           skuServiceInterface,
 		serverAddress:        getServerAddress(appConfig),
 		maxClientConnections: appConfig.MaxClientConnections,
 		connectionType:       appConfig.ConnectionType,
@@ -97,10 +95,13 @@ func (s *Server) handleConnection(conn net.Conn, c1 chan string) {
 
 	input := string(buffer[:len(buffer)-1])
 	log.Println(input)
+
 	if input == terminateOrder {
 		c1 <- input
 		return
 	}
+
+	s.skuService.RegisterSku(input)
 
 	s.handleConnection(conn, c1)
 }

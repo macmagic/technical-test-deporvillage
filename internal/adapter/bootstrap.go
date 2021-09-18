@@ -1,4 +1,4 @@
-package bootstrap
+package adapter
 
 import (
 	"github.com/macmagic/technical-test-deporvillage/internal/application/config"
@@ -12,18 +12,19 @@ import (
 const maxLifeTime = 900
 
 func Run() {
-
+	//Load app config
 	appConfig, err := config.NewConfig("./app.json")
 
 	if err != nil {
-		log.Fatalln("Cannot load application appConfig")
+		log.Fatalln("Cannot load application configuration", err.Error())
 	}
 
-	repository := infrastructure.NewFileRepository()
+	// Dependencies Injection
+	repository := infrastructure.NewFileRepository(appConfig)
 	skuService := domain.NewSkuService(repository)
-
 	server := infrastructure.NewServer(appConfig, skuService)
 
+	//Stop channel to stop the main routine when receives a "terminate" command or the lifetime terminate
 	stopApp := make(chan bool)
 	go runnerControl(stopApp)
 
@@ -36,6 +37,8 @@ func Run() {
 	case <-stopApp:
 		server.StopServer()
 		log.Println("Stopping application...")
+		log.Println(skuService.GenerateReport())
+		repository.CloseFile()
 		os.Exit(0)
 	}
 }
