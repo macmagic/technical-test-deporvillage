@@ -9,15 +9,9 @@ import (
 	"time"
 )
 
-const maxLifeTime = 900
+const maxLifeTime = 60
 
-func Run() {
-	//Load app config
-	appConfig, err := config.NewConfig("./app.json")
-
-	if err != nil {
-		log.Fatalln("Cannot load application configuration", err.Error())
-	}
+func Run(appConfig *config.Config) {
 
 	// Dependencies Injection
 	repository := infrastructure.NewFileRepository(appConfig)
