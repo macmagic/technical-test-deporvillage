@@ -39,7 +39,7 @@ func TestE2e(t *testing.T) {
 	t.Run("Given the system is running", func(t *testing.T) {
 		setup()
 
-		t.Run("When 6 clients tries to connect to the server", func(t *testing.T) {
+		t.Run("When 5 clients tries to connect to the server", func(t *testing.T) {
 			client1 := createClient(cfg)
 			client2 := createClient(cfg)
 			client3 := createClient(cfg)
@@ -52,12 +52,6 @@ func TestE2e(t *testing.T) {
 				sendMessage(client3, "2222-5555")
 				sendMessage(client4, "2sssss")
 				sendMessage(client5, "4444-SDAS")
-
-				client1.Close()
-				client2.Close()
-				client3.Close()
-				client4.Close()
-				client5.Close()
 
 				t.Run("Then the log file must contains two elements", func(t *testing.T) {
 					file, err := os.OpenFile(cfg.SkuLogPath, os.O_RDWR, 755)

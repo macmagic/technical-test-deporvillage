@@ -8,6 +8,8 @@ import (
 
 func main() {
 
+	log.Println("Starting application!")
+
 	//Load app config
 	appConfig, err := config.NewConfig("./app.json")
 

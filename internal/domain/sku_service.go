@@ -5,6 +5,7 @@ import (
 	"regexp"
 )
 
+//go:generate moq -out sku_service_mock.go . SkuServiceInterface
 type SkuServiceInterface interface {
 	RegisterSku(incomingSku string)
 }

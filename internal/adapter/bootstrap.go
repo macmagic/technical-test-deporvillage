@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const maxLifeTime = 60
+const maxLifeTime = 20
 
 func Run(appConfig *config.Config) {
 

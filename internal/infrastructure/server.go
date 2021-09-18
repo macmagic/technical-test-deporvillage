@@ -62,7 +62,7 @@ func (s *Server) StartListen() {
 			log.Println("Client connected")
 			log.Println("Client " + conn.RemoteAddr().String() + " connected.")
 
-			if len(s.clientConnections) >= s.maxClientConnections {
+			if len(s.clientConnections) == s.maxClientConnections {
 				log.Println("Limit reached! Disconnecting:", conn.RemoteAddr().String())
 				conn.Close()
 			}
@@ -102,8 +102,7 @@ func (s *Server) handleConnection(conn net.Conn, c1 chan string) {
 	}
 
 	s.skuService.RegisterSku(input)
-
-	s.handleConnection(conn, c1)
+	conn.Close()
 }
 
 func getServerAddress(config *config.Config) string {
